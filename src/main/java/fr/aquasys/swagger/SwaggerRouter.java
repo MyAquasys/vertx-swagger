@@ -18,6 +18,7 @@ public class SwaggerRouter extends RouterImpl {
     private List<SwaggerRoute> swaggerRoutes = new ArrayList<SwaggerRoute>();
     private List<Pair<String, Class<?>>> headerParameters;
     private List<Pair<Integer, String>> responses;
+    private String tag;
 
     public SwaggerRouter(Vertx vertx) {
         super(vertx);
@@ -64,6 +65,14 @@ public class SwaggerRouter extends RouterImpl {
 
     public void responses(Pair<Integer, String>... responses) {
         this.responses = new ArrayList(Arrays.asList(responses));
+    }
+
+    public void tag(String tag) {
+        this.tag = tag;
+    }
+
+    public String getTag() {
+        return tag;
     }
 
     public List<Pair<Integer, String>> getResponses() {

@@ -32,7 +32,7 @@ public class SwaggerHandler {
         if (swagger == null) {
             this.swagger = new Swagger();
             this.swagger.setSwagger("2.0");
-            this.swagger.paths(getPaths(router.getRoutes().stream().filter(route -> route.getPath() != null && !route.getPath().equals("/"))));
+            getPaths(router.getRoutes().stream().filter(route -> route.getPath() != null && !route.getPath().equals("/")));
             Info info = new Info();
             info.title(applicationTitle).description(applicationDescription).version(applicationVersion);
             this.swagger.info(info);
@@ -41,37 +41,50 @@ public class SwaggerHandler {
         return swagger;
     }
 
-    private Map<String, Path> getPaths(Stream<Route> routes) {
-        Map<String, Path> paths = new HashMap<>();
+    private void getPaths(Stream<Route> routes) {
         routes.forEach(route -> {
-            try {
-                Field routerField = route.getClass().getDeclaredField("contextHandler");
-                routerField.setAccessible(true);
+            Map<String, Path> paths = new HashMap<>();
+            Router newRouter = getRouter(route);
+            if (newRouter != null && newRouter instanceof SwaggerRouter) {
+                SwaggerRouter swaggerRouter = (SwaggerRouter) newRouter;
+                swaggerRouter.getSwaggerRoutes().stream()
+                        .collect(Collectors.groupingBy(r -> r.getRoute().getPath(), Collectors.toList()))
+                        .forEach((path, r) -> paths.put(route.getPath() + getSwaggerPath(path), getPath(r, swaggerRouter)));
+                this.swagger.addTag(getTag(swaggerRouter));
+                this.swagger.paths(paths);
+            }
+        });
+    }
+
+    private Tag getTag(SwaggerRouter swaggerRouter) {
+        Tag tag = new Tag();
+        tag.setName(swaggerRouter.getTag());
+        return tag;
+    }
+
+    private Router getRouter(Route route) {
+        Router router = null;
+        try {
+            Field routerField = route.getClass().getDeclaredField("contextHandler");
+            routerField.setAccessible(true);
                 /*
                  Get Handler
                   */
-                Handler<RoutingContext> handler = (Handler<RoutingContext>) routerField.get(route);
-                Field field = Arrays.asList(handler.getClass().getDeclaredFields())
-                        .stream()
-                        .filter(f -> f.getName().equals("arg$1"))
-                        .findFirst()
-                        .orElse(null);
+            Handler<RoutingContext> handler = (Handler<RoutingContext>) routerField.get(route);
+            Field field = Arrays.asList(handler.getClass().getDeclaredFields())
+                    .stream()
+                    .filter(f -> f.getName().equals("arg$1"))
+                    .findFirst()
+                    .orElse(null);
 
-                if (field != null) {
-                    field.setAccessible(true);
-                    Router newRouter = (Router) field.get(handler);
-                    if (newRouter instanceof SwaggerRouter) {
-                        SwaggerRouter swaggerRouter = (SwaggerRouter) newRouter;
-                        swaggerRouter.getSwaggerRoutes().stream()
-                                .collect(Collectors.groupingBy(r -> r.getRoute().getPath(), Collectors.toList()))
-                                .forEach((path, r) -> paths.put(route.getPath() + getSwaggerPath(path), getPath(r, swaggerRouter)));
-                    }
-                }
-            } catch (IllegalAccessException | NoSuchFieldException e) {
-                e.printStackTrace();
+            if (field != null) {
+                field.setAccessible(true);
+                router = (Router) field.get(handler);
             }
-        });
-        return paths;
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        return router;
     }
 
     private String getSwaggerPath(String path) {
