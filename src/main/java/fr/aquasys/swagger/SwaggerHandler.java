@@ -50,16 +50,10 @@ public class SwaggerHandler {
                 swaggerRouter.getSwaggerRoutes().stream()
                         .collect(Collectors.groupingBy(r -> r.getRoute().getPath(), Collectors.toList()))
                         .forEach((path, r) -> paths.put(route.getPath() + getSwaggerPath(path), getPath(r, swaggerRouter)));
-                this.swagger.addTag(getTag(swaggerRouter));
+                this.swagger.addTag(swaggerRouter.getTag());
                 this.swagger.paths(paths);
             }
         });
-    }
-
-    private Tag getTag(SwaggerRouter swaggerRouter) {
-        Tag tag = new Tag();
-        tag.setName(swaggerRouter.getTag());
-        return tag;
     }
 
     private Router getRouter(Route route) {
@@ -98,6 +92,7 @@ public class SwaggerHandler {
         Path path = new Path();
         routes.forEach(route -> {
             Operation operation = new Operation();
+            operation.tag(swaggerRouter.getTag().getName());
             /*
             Add Path parameters
              */

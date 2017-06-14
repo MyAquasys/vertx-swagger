@@ -1,5 +1,6 @@
 package fr.aquasys.swagger;
 
+import io.swagger.models.Tag;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Route;
@@ -18,7 +19,7 @@ public class SwaggerRouter extends RouterImpl {
     private List<SwaggerRoute> swaggerRoutes = new ArrayList<SwaggerRoute>();
     private List<Pair<String, Class<?>>> headerParameters;
     private List<Pair<Integer, String>> responses;
-    private String tag;
+    private Tag tag;
 
     public SwaggerRouter(Vertx vertx) {
         super(vertx);
@@ -67,11 +68,13 @@ public class SwaggerRouter extends RouterImpl {
         this.responses = new ArrayList(Arrays.asList(responses));
     }
 
-    public void tag(String tag) {
+    public void tag(String name) {
+        Tag tag = new Tag();
+        tag.setName(name);
         this.tag = tag;
     }
 
-    public String getTag() {
+    public Tag getTag() {
         return tag;
     }
 
